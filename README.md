@@ -1,5 +1,4 @@
-# Packer-AWS
-<!--Vagrant-Puppet-Wordpress--> 
+<!--# Automatización de Imágenes Multinube con Packer-->
 <h1 align="center"> 🧩 Automatización de Imágenes Multinube (Multi-cloud Image Automation) con Packer </h1>
 
 <!--![Automatización WordPress con Vagrant y Puppet](./img.png)-->
