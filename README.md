@@ -5,10 +5,10 @@
 
 >Este repositorio contiene diversas versiones de un proyecto de automatización de imágenes para AWS y Azure utilizando Packer. El objetivo de este proyecto es crear imágenes de máquina listas para el despliegue de aplicaciones web (como Node.js con Nginx) en varias nubes, promoviendo la eficiencia y la consistencia en el proceso de aprovisionamiento.
 
-## Descripción
+## Descripción.
 >La automatización multinube permite crear imágenes de máquinas virtuales personalizadas que pueden ser desplegadas de manera coherente a través de diferentes proveedores de nube. En este repositorio, cada versión de la plantilla de Packer está configurada para aprovisionar y configurar una aplicación Node.js sobre un servidor Nginx, listo para ser lanzado en AWS y Azure con instancias de tipo t2.micro (en AWS). A lo largo del repositorio, podrás encontrar diferentes versiones de plantillas que exploran diversas configuraciones y mejoras para optimizar la construcción y despliegue en estos entornos multinube.
 
-## Características del Proyecto
+## Características del Proyecto.
 - **Automatización:** Uso de Packer para generar imágenes personalizadas.
 
 - **Multinube:** Plantillas preparadas para AWS y Azure.
@@ -16,3 +16,6 @@
 - **Escalabilidad:** Despliegue de una aplicación web de Node.js sobre Nginx.
 
 - **Versionado:** Este repositorio contiene distintas versiones del proyecto que muestran mejoras y nuevas funcionalidades.
+
+## Versiones.
+- **packer-aws:** 
