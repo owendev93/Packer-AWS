@@ -9,7 +9,7 @@ packer {
 
 source "amazon-ebs" "packer-aws" {
   region        = "sa-east-1"
-  ami_name      = "pkr-nodejs-ubuntu-v1.0{{timestamp}}"
+  ami_name      = "pkr-nodejs-ubuntu-v2.0{{timestamp}}"
   instance_type = "t2.micro"
 
   source_ami_filter {
