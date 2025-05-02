@@ -18,6 +18,6 @@
 - **Versionado:** Este repositorio contiene distintas versiones del proyecto que muestran mejoras y nuevas funcionalidades.
 
 ## Versiones.
-- **packer-aws:** Este template de Packer crea una imagen AMI personalizada en AWS basada en la última versión de Ubuntu 22.04, utilizando una instancia temporal t2.micro en la región que se defina. El proceso se autentica por defecto (usando credenciales locales) y permite conectarse vía SSH como usuario ubuntu. La imagen resultante incluye un nombre único con timestamp.
-- **packer-aws-ami:**
-- **packer-aws-ami-terraform:**
+- **packer-aws:** Template de Packer para crear una imagen AMI personalizada en AWS basada en la última versión de Ubuntu 22.04, utilizando una instancia temporal t2.micro. El proceso se autentica por defecto (usando credenciales locales) y permite conectarse vía SSH como usuario ubuntu. La imagen resultante incluye un nombre único con timestamp.
+- **packer-aws-ami:** Template de Packer para crear una AMI en AWS con Node.js y Nginx preinstalados, basada en Ubuntu 22.04. Copia archivos de una app y un script de instalación al sistema, luego ejecuta ese script para dejar la imagen lista con la aplicación configurada.
+- **packer-aws-ami-terraform:** En proceso de construcción.
