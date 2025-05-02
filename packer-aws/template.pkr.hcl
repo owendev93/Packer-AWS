@@ -24,7 +24,6 @@ source_ami_filter {
     most_recent = true
     owners      = ["099720109477"]
 }
-  }
 
     ssh_username = "ubuntu"
 }
