@@ -12,7 +12,7 @@ source "amazon-ebs" "packer-aws" {
   /*access_key    = var.aws_access_key
   secret_key    = var.aws_secret_key*/
   region        = "sa-east-1"
-  ami_name      = "pkr-nodejs-ubuntu-v1.0{{timestamp}}"
+  ami_name      = "pkr-ubuntu-v1.0{{timestamp}}"
   instance_type = "t2.micro"
 
 source_ami_filter {
