@@ -23,7 +23,7 @@ cp -r /tmp/app/* $APP_DIR
 
 # Preparar la app
 cd $APP_DIR
-npm install
+npm install || true
 
 # Configuración de Nginx (solo si existe)
 if [ -f "$APP_DIR/nginx-config.conf" ]; then
