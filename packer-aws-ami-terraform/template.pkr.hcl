@@ -7,6 +7,9 @@ packer {
   }
 }
 
+variable "aws_region" { type = string }
+variable "ami_name" { type = string }
+
 source "amazon-ebs" "packer-aws" {
   region        = "sa-east-1"
   ami_name      = "pkr-nodejs-ubuntu-v1.0{{timestamp}}"
