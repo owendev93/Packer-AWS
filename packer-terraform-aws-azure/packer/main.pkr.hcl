@@ -82,11 +82,11 @@ source "amazon-ebs" "aws_builder" {
   #source_ami = "ami-095a8f574cb0ac0d0" # AMI de Ubuntu 20.04 LTS
 
   ## OPCION 2 --> Seleccionar la AMI más reciente
-  # Esto busca la AMI más reciente de Ubuntu 20.04 con las caracteristicas especificadas (región especificada,ebs...)
+  # Esto busca la AMI más reciente de Ubuntu18.04 con las caracteristicas especificadas (región especificada,ebs...)
 
   source_ami_filter {
     filters = {
-      name                = "ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"
+      name                = "ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"
       root-device-type    = "ebs"
       virtualization-type = "hvm"
     }
@@ -99,7 +99,7 @@ source "amazon-ebs" "aws_builder" {
   ami_name      = var.ami_name
 
   tags = {
-    Name = "Packer-Builder" # Nombre descriptivo para la instancia Packer.
+    Name = "Packer-AWS" # Nombre descriptivo para la instancia Packer.
   }
 }
 
