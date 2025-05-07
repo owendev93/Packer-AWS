@@ -52,8 +52,8 @@ variable "azure_tenant_id" { description = "Azure tenant ID" }
 ###############################
 
 variable "azure_region" { 
-  default = "East US" 
-  description = "Azure region" 
+  default = "Brazil South" 
+  description = "Region de Azure Disponible" 
 }
 variable "azure_instance_type" { 
   default = "Standard_B1ms" 
@@ -61,7 +61,7 @@ variable "azure_instance_type" {
   }
 variable "azure_admin_username" { 
   default = "adminuser" 
-  description = "Admin username for Azure VM" 
+  description = "Usuario Administrador para gestionar la VM de Azure" 
 }
 variable "azure_admin_password" { description = "Admin password for Azure VM" }
 variable "azure_image_name" { description = "Name of the Azure image created by Packer" }
