@@ -1,0 +1,5 @@
+aws_region        = "sa-east-1"
+ami_name          = "Node.JS-ACT1-v0.1"
+instance_type     = "t2.micro"
+project_name      = "PackerAWS"
+environment       = "des"
