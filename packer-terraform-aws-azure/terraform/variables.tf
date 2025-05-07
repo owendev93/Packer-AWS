@@ -1,24 +1,16 @@
-### Variable para elegir en que nube quiero desplegar
-
-variable "deployment_target" {
-  description = "Define qué infraestructura desplegar: aws, azure o both"
-  default     = "both"
-}
-
-
 ############################################
 # AWS
 ######º#####################################
 
 
 variable "aws_region" {
-  default     = "us-east-1"
-  description = "Región de AWS"
+  default     = "sa-east-1"
+  description = "AWS Region"
 }
 
 variable "ami_name" {
-  default     = "mi-ami"
-  description = "Nombre base de la AMI"
+  default     = "ami-node-nginx"
+  description = "Nombre base de la AMI a crear"
 }
 
 variable "instance_type" {
@@ -27,25 +19,25 @@ variable "instance_type" {
 }
 
 variable "key_name" {
-  description = "Nombre del par de claves para acceder a la instancia"
+  description = "Nombre del par de claves para acceder a la instancia generado"
 }
 
 variable "instance_name" {
-  default     = "mi-instancia-ec2"
+  default     = "packer-aws-ec2"
   description = "Nombre de la instancia"
 }
 ### CREDENCIALES
 
 variable "aws_access_key" {
-  description = "Clave de acceso de AWS"
+  description = "Acceso de AWS (AWS_ACCESS_KEY_ID)"
 }
 
 variable "aws_secret_key" {
-  description = "Clave secreta de AWS"
+  description = "Secreta de AWS (AWS_SECRET_ACCESS_KEY)"
 }
 
 variable "aws_session_token" {
-  description = "Token de sesión de AWS"
+  description = "Sesión de AWS (AWS_SESSION_TOKEN)"
 }
 
 ############################################
@@ -53,7 +45,7 @@ variable "aws_session_token" {
 ######º#####################################
 
 ###############CREDENCIALES
-variable "azure_subscription_id" { description = "Azure subscription ID" }
+variable "azure_subscription_id" { description = "Azure ID subscription " }
 variable "azure_client_id" { description = "Azure client ID" }
 variable "azure_client_secret" { description = "Azure client secret" }
 variable "azure_tenant_id" { description = "Azure tenant ID" }

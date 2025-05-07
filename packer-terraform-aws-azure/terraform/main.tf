@@ -30,7 +30,7 @@ provider "azurerm" {
 # y generar la AMI basada en el archivo de configuración de Packer (main.pkr.hcl).
 resource "null_resource" "packer_ami" {
 
-  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
+  count = 1
 
   # local-exec ejecuta un comando en la máquina que ejecuta Terraform.
   provisioner "local-exec" {
@@ -44,7 +44,7 @@ resource "null_resource" "packer_ami" {
 # OBTENER LA ÚLTIMA AMI CREADA
 ####################################################################################################
 data "aws_ami" "latest_ami" {
-  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
+  count = 1
   depends_on = [null_resource.packer_ami] # Espera a que el provisioner "packer_ami" termine --> asegura que la AMI sea creada antes de intentar recuperarla.
   most_recent = true                      # Selecciona siempre la AMI más reciente.
   filter {
@@ -58,7 +58,7 @@ data "aws_ami" "latest_ami" {
 # OBTENER LA VPC POR DEFECTO (configuración de red virtual)
 ####################################################################################################
 data "aws_vpc" "default" {
-  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
+  count = 1
   default = true # Recupera la VPC predeterminada asociada a la cuenta AWS.
 }
 
@@ -87,7 +87,7 @@ data "aws_vpc" "default" {
 resource "aws_security_group" "web_server_sg" {
   # Crear un nuevo grupo de seguridad solo si no existe uno con el nombre especificado.
   # Condición para crear o no el recurso. (si no existe count=1, se crea uno nuevo), try es para que no falle si no hay
-  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
+  count = 1
   #count = length(try(data.aws_security_group.existing_sg, [])) == 0 ? 1 : 0
   name        = "${var.instance_name}-sg" # El nombre del grupo de seguridad se basa en el nombre de la instancia.
   description = "Grupo de seguridad para la instancia EC2" # Descripción del grupo.
@@ -155,7 +155,7 @@ resource "aws_key_pair" "generated_key" {
 
 resource "aws_instance" "web_server" {
   ## IMPORTANTE--> Condicion para desplegar en AWS, si al hacer el terraform apply el valor del target es aws o both, se desplegara en aws
-  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
+  count = 1
 
   ami                   = data.aws_ami.latest_ami[0].id # Usa la AMI más reciente creada con Packer.
   instance_type         = var.instance_type          # Define el tipo de instancia basado en la variable `instance_type`.
@@ -205,7 +205,7 @@ resource "aws_instance" "web_server" {
 # Crea un grupo de recursos donde se alojarán los recursos de Azure, como redes y máquinas virtuales.
 resource "azurerm_resource_group" "example_rg" {
 
-  count = var.deployment_target == "azure" || var.deployment_target == "both" ? 1 : 0
+  count = 1
   #name     = "${var.instance_name}-rg" # El nombre del grupo de recursos se basa en la variable `instance_name`.
   name = var.azure_resource_group_name
   location = var.azure_region          # Define la región donde se desplegarán los recursos.
@@ -218,7 +218,7 @@ resource "azurerm_resource_group" "example_rg" {
 # y generar la imagen basada en el archivo de configuración de Packer (`main.pkr.hcl`).
 resource "null_resource" "packer_ami_azure" {
 
-  count = var.deployment_target == "azure" || var.deployment_target == "both" ? 1 : 0
+  count = 1
   depends_on = [azurerm_resource_group.example_rg] # Espera a que el recurso `azurerm_resource_group.example_rg` termine --> asegura que el grupo de recursos esté creado antes de intentar crear la imagen.
   # local-exec ejecuta un comando en la máquina que ejecuta Terraform.
   provisioner "local-exec" {
@@ -232,7 +232,7 @@ resource "null_resource" "packer_ami_azure" {
 ####################################################################################################
 data "azurerm_image" "latest_azure_image" {
 
-  count = var.deployment_target == "azure" || var.deployment_target == "both" ? 1 : 0
+  count = 1
 
   depends_on          = [null_resource.packer_ami_azure] # Espera a que el provisioner `packer_ami_azure` termine --> asegura que la imagen sea creada antes de intentar recuperarla.
   name                = var.azure_image_name    # Busca la imagen por el nombre especificado en las variables.
@@ -246,7 +246,7 @@ data "azurerm_image" "latest_azure_image" {
 # Configura una red virtual para conectar recursos como la máquina virtual y la interfaz de red.
 resource "azurerm_virtual_network" "example_vnet" {
 
-  count = var.deployment_target == "azure" || var.deployment_target == "both" ? 1 : 0
+  count = 1
   name                = "${var.azure_instance_name}-vnet"  # Nombre de la red virtual basado en `instance_name`.
   address_space       = ["10.0.0.0/16"]              # Espacio de direcciones IP asignado a la red.
   location            = azurerm_resource_group.example_rg[0].location # Ubicación de la red virtual (mismo lugar que el grupo de recursos).
@@ -257,7 +257,7 @@ resource "azurerm_virtual_network" "example_vnet" {
 # CONFIGURACIÓN DE GRUPO DE SEGURIDAD PARA LA MÁQUINA VIRTUAL EN AZURE
 ####################################################################################################
 resource "azurerm_network_security_group" "example_nsg" {
-  count = var.deployment_target == "azure" || var.deployment_target == "both" ? 1 : 0
+  count = 1
   name                = "${var.azure_instance_name}-nsg"
   location            = azurerm_resource_group.example_rg[0].location
   resource_group_name = azurerm_resource_group.example_rg[0].name
@@ -294,7 +294,7 @@ resource "azurerm_network_security_group" "example_nsg" {
 # Configura una subred dentro de la red virtual para conectar la máquina virtual.
 resource "azurerm_subnet" "example_subnet" {
 
-  count = var.deployment_target == "azure" || var.deployment_target == "both" ? 1 : 0
+  count = 1
   name                 = "${var.azure_instance_name}-subnet"  # Nombre de la subred basado en `instance_name`.
   resource_group_name  = azurerm_resource_group.example_rg[0].name # Grupo de recursos asociado.
   virtual_network_name = azurerm_virtual_network.example_vnet[0].name # Nombre de la red virtual a la que pertenece esta subred.
@@ -310,7 +310,7 @@ resource "azurerm_subnet" "example_subnet" {
 #   allocation_method   = "Dynamic" # Usa una IP pública dinámica
 # }
 resource "azurerm_public_ip" "example_public_ip" {
-  count               = var.deployment_target == "azure" || var.deployment_target == "both" ? 1 : 0
+  count               = 1
   name                = "${var.azure_instance_name}-public-ip"
   location            = azurerm_resource_group.example_rg[0].location
   resource_group_name = azurerm_resource_group.example_rg[0].name
@@ -324,7 +324,7 @@ resource "azurerm_public_ip" "example_public_ip" {
 # Configura una interfaz de red para conectar la máquina virtual a la red y asignar una dirección IP dinámica.
 resource "azurerm_network_interface" "example_nic" {
 
-  count = var.deployment_target == "azure" || var.deployment_target == "both" ? 1 : 0
+  count = 1
   name                = "${var.azure_instance_name}-nic"       # Nombre de la interfaz de red basado en `instance_name`.
   location            = azurerm_resource_group.example_rg[0].location # Ubicación de la interfaz de red (mismo lugar que el grupo de recursos).
   resource_group_name = azurerm_resource_group.example_rg[0].name      # Grupo de recursos asociado.
@@ -353,7 +353,7 @@ resource "azurerm_network_interface_security_group_association" "example" {
 resource "azurerm_virtual_machine" "example_vm" {
 
   ## IMPORTANTE--> Condicion para desplegar en AZURE, si al hacer el terraform apply el valor del target es azure o both, se desplegara en azure
-  count = var.deployment_target == "azure" || var.deployment_target == "both" ? 1 : 0
+  count = 1
 
   name                  = "${var.azure_instance_name}-vm" # Nombre de la máquina virtual basado en `instance_name`.
   location              = azurerm_resource_group.example_rg[0].location # Ubicación de la máquina virtual (mismo lugar que el grupo de recursos).
