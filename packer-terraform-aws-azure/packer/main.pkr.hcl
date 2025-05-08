@@ -156,13 +156,13 @@ build {
     ]
   }
 
-  # Cuarto provisioner: Copiar el archivo de configuración de Nginx al servidor
+  #Provisioner 4: Copiar el archivo de configuración de Nginx al servidor
   provisioner "file" {
     source      = "../packer/provisioners/nginx_default.conf"
     destination = "/tmp/nginx_default"
   }
 
-  # Quinto provisioner:Configuración de Nginx como proxy inverso y validación
+  #Provisioner 5: Configuración de Nginx como proxy inverso y validación
   provisioner "shell" {
     inline = [
       "sudo cp /tmp/nginx_default /etc/nginx/sites-available/default",
@@ -173,7 +173,6 @@ build {
   }
 }
 
-#######################################################################3
 # PROVISIONER para Azure usamos Ansible
 
 build {
@@ -186,7 +185,7 @@ build {
       "sudo apt install -y ansible"
     ]
   }
-  provisioner "file" { # Pasamos los ficheros a la instancia para que ansible los puedo manipular (ansible esta en la instancia)
+  provisioner "file" { 
   source      = "../packer/provisioners/app.js"
   destination = "/tmp/app.js"
 }
@@ -196,6 +195,6 @@ build {
   destination = "/tmp/nginx_default.conf"
 }
   provisioner "ansible-local" {
-    playbook_file = "../packer/provisioners/provision.yml" #perspectiva desde el terraform apply 
+    playbook_file = "../packer/provisioners/provision.yml" 
   }
 }
