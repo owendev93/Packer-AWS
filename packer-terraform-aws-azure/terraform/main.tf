@@ -1,7 +1,6 @@
-####################################################################################################
 # CONFIGURACIÓN DE TERRAFORM PARA LOS PROVEEDORES AWS Y AZURE
-####################################################################################################
-
+# Este archivo define la infraestructura en la nube utilizando Terraform, incluyendo la creación de instancias EC2 en AWS y máquinas virtuales en Azure.
+# Se utilizan variables para definir configuraciones específicas y se implementan recursos como grupos de seguridad, redes virtuales y máquinas virtuales.
 # AWS Provider
 provider "aws" {
   region = var.aws_region
