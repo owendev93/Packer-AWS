@@ -56,7 +56,7 @@
         pm2 save
         
 
-    # Copiar archivo de configuración de Nginx
+    # Copia Archivo de Configuración de Nginx
     - name: Copiar configuración de Nginx
       copy:
         src: /tmp/nginx_default.conf
@@ -65,7 +65,7 @@
         group: root
         mode: '0644'
 
-    # Probar y reiniciar Nginx
+    # Realiza un Enlace Simbólico para Habilitar la Configuración de Nginx
     - name: Probar configuración de Nginx
       command: nginx -t
 
@@ -74,7 +74,7 @@
         name: nginx
         state: restarted
 
-    # Validar el servidor
+    # Validar que el Servidor está Funcionando de Forma Correcta
     - name: Validar que el servidor está funcionando
       shell: |
         curl -I localhost
