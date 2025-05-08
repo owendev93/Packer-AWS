@@ -80,22 +80,24 @@ source "amazon-ebs" "aws_builder" {
       root-device-type    = "ebs"
       virtualization-type = "hvm"
     }
-    owners      = ["099720109477"] # Propietario de las AMIs de Ubuntu (Canonical)
+    owners      = ["099720109477"]
     most_recent = true
   }
 
-  instance_type = var.instance_type # Instancia recomendada para AMIs de Ubuntu (t2.micro), esta en el fichero de variables
-  ssh_username  = "ubuntu" # Usuario predeterminado en AMIs de Ubuntu
+  instance_type = var.instance_type # Instancia AMIs t2.micro
+  ssh_username  = "ubuntu" # Usuario SSH para la imagen de AWS
   ami_name      = var.ami_name
 
   tags = {
-    Name = "Packer-AWS" # Nombre descriptivo para la instancia Packer.
+    Name = "Packer-AWS" 
   }
 }
 
-#######################################################################################################################
-# AZURE BUILDER
-#######################################################################################################################
+
+# Builder para AZURE
+# Se define cómo se construye la imagen en Azure
+# Se utiliza el plugin de Azure ARM para crear una imagen de Azure
+# Se define el filtro para seleccionar la imagen base de Ubuntu 18.04
 source "azure-arm" "azure_builder" {
   subscription_id                = var.azure_subscription_id
   client_id                      = var.azure_client_id
@@ -105,13 +107,13 @@ source "azure-arm" "azure_builder" {
   managed_image_name             = var.azure_image_name
   managed_image_resource_group_name = var.azure_resource_group_name
   location                       = var.azure_region
-  ssh_username = "ubuntu" # usuario para conectarse a la instancia y realizar todas las operaciones
+  ssh_username = "ubuntu" # Usuario SSH para la imagen de Azure
 
-  vm_size                        = var.azure_instance_type # instancia equivalente a t2.micro de aws
+  vm_size                        = var.azure_instance_type # Instancia de Azure (ej. Standard_B1s) equivalente a t2.micro de AWS
   os_type                        = "Linux"
   image_publisher                = "Canonical"
   image_offer                    = "UbuntuServer"
-  image_sku                      = "18.04-LTS" # Cambia al SKU disponible
+  image_sku                      = "18.04-LTS" 
   image_version                  = "latest"
   azure_tags = {
     environment = var.environment
@@ -119,46 +121,40 @@ source "azure-arm" "azure_builder" {
 }
 
 
-#######################################################################################################################
-# PROVISIONERS (SAME FOR BOTH CLOUD (AWS AND AZURE))
-#######################################################################################################################
-# PROVISIONERS: Configura el sistema operativo y la aplicación
-# build{}: Describe cómo se construirá la imagen --> Definir los provisioners para instalar y configurar software
+# Provisioners para AWS y Azure
+# Se definen los provisioners para instalar y configurar el software en la imagen
 build {
   name    = "comandos-cloud-node-nginx"
-  #sources = ["source.amazon-ebs.aws_builder", "source.azure-arm.azure_builder"]
   sources = ["source.amazon-ebs.aws_builder"]
 
-  # Primer provisioner: ejecuta comandos de shell en la instancia
+  # Se utiliza para instalar Nginx y Node.js, y configurar el firewall
+  # Se utiliza el plugin de shell para ejecutar comandos en la instancia
+  # Se utiliza el plugin de file para transferir archivos desde el host a la instancia
   provisioner "shell" {                             
     inline = [
-      "sudo apt update -y",                         # Actualiza la lista de paquetes
-      "sudo apt install -y nginx",                 # Instala el servidor web Nginx
-      "curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -", # Configura el repositorio para instalar Node.js 14
-      "sudo apt install -y nodejs build-essential", # Instala Node.js y herramientas de construcción esenciales
-      "sudo npm install pm2@latest -g",            # Instala PM2 globalmente para gestionar procesos Node.js
-      "sudo ufw allow 'Nginx Full'",               # Configura el firewall para permitir tráfico HTTP y HTTPS para Nginx
-      "sudo systemctl enable nginx"                # Habilita el servicio Nginx para que se inicie automáticamente
+      "sudo apt update -y",                         
+      "sudo apt install -y nginx",                 
+      "curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -", 
+      "sudo apt install -y nodejs build-essential", 
+      "sudo npm install pm2@latest -g",            
+      "sudo ufw allow 'Nginx Full'",               
+      "sudo systemctl enable nginx"                
     ]
   }
 
-  # Segundo provisioner: transfiere un archivo desde el host a la instancia
   provisioner "file" {                              
-    source      = "../packer/provisioners/app.js"            # Ruta del archivo en el host
-    destination = "/home/ubuntu/app.js"            # Ruta de destino en la instancia
+    source      = "../packer/provisioners/app.js"           
+    destination = "/home/ubuntu/app.js"            
   }
 
-  # Tercer provisioner: configura la aplicación Node.js con PM2 (gestor de procesos de Node.js)
   provisioner "shell" {
     inline = [
-      "sudo pm2 start /home/ubuntu/app.js",               # Inicia la aplicación como root
-      "sudo env PATH=$PATH:/usr/bin pm2 startup systemd --hp /root", # Configura PM2 para autoarranque como root
-      "sudo pm2 save",                                    # Guarda el estado de PM2 en /root/.pm2/dump.pm2
-      "sudo cp /root/.pm2/dump.pm2 /etc/pm2-dump.pm2 || true" # Copia el dump a una ubicación segura (opcional)
+      "sudo pm2 start /home/ubuntu/app.js",               
+      "sudo env PATH=$PATH:/usr/bin pm2 startup systemd --hp /root", 
+      "sudo pm2 save",                                    
+      "sudo cp /root/.pm2/dump.pm2 /etc/pm2-dump.pm2 || true" 
     ]
   }
-
-  ### Provisioners (4 y 5) para configurar Nginx como proxy inverso
 
   # Cuarto provisioner: Copiar el archivo de configuración de Nginx al servidor
   provisioner "file" {
@@ -169,17 +165,14 @@ build {
   # Quinto provisioner:Configuración de Nginx como proxy inverso y validación
   provisioner "shell" {
     inline = [
-      # Copia la configuración de Nginx
       "sudo cp /tmp/nginx_default /etc/nginx/sites-available/default",
-      # Prueba la configuración de Nginx
       "sudo nginx -t",
-      # Reinicia el servicio de Nginx
       "sudo systemctl restart nginx",
-      # Valida que el servidor está funcionando
       "curl -I localhost"
     ]
   }
 }
+
 #######################################################################3
 # PROVISIONER para Azure usamos Ansible
 
