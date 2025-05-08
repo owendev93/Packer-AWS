@@ -1,8 +1,6 @@
-# Plantilla de Packer para crear una imagen para AWS con Ubuntu 20.04, Nginx y Node.js
+# Plantilla de Packer para crear una imagen para AWS y Azure con Ubuntu 18.04, Nginx y Node.js
 
-########################################################################################################################
-# PLUGINS: Define los plugins necesarios para la plantilla
-# Para descargar el plugin necesario para la plantilla, levantar la imagen en Azure y aws
+# Definición de los Plugings necesarios para la plantilla.
 packer {
   required_plugins {
     amazon = {
@@ -20,10 +18,8 @@ packer {
   }
 }
 
-#######################################################################################################################
-# VARIABLES
-#######################################################################################################################
-# a las credenciales de AWS y Azureles voy a asignar valores por defecto, por si no se pasan al ejecutar el comando
+# Definición de variables para la plantilla de Packer
+# Variables para la plantilla de Packer
 variable "aws_region" { description = "Región de AWS" }
 variable "ami_name" { description = "Nombre de la AMI generada" }
 variable "instance_type" { description = "Tipo de instancia de AWS" }
@@ -49,7 +45,7 @@ variable "azure_instance_type" { description = "Tipo de instancia en Azure"  }
 variable "azure_admin_username" { description = "Usuario administrador para Azure"  }
 variable "azure_admin_password" { description = "Contraseña del administrador para Azure"  }
 variable "azure_resource_group_name" { description = "Nombre del grupo de recursos de Azure" }
-# CREDENCIALES (no hace falta definirlas creo)
+
 variable "azure_subscription_id" { 
   description = "ID de la suscripción de Azure" 
   default = "default"
@@ -67,23 +63,17 @@ variable "azure_tenant_id" {
   default = "default"
 }
 
-#######################################################################################################################
-# AWS BUILDER
-#######################################################################################################################
-# BUILDER: Define cómo se construye la AMI en AWS y azure
-# source{}--> define el sistema base sobre el que quiero crear la imagen (ISO ubuntu) y el proveeedor para el que creamos la imagen 
-# (tecnologia con la que desplegará la imagen) --> AMAZON y azure
+
+# Builder para AWS
+# Se define cómo se construye la AMI en AWS
+# Se utiliza el plugin de Amazon EBS para crear una imagen de Amazon EC2
+# Se define el filtro para seleccionar la AMI base de Ubuntu 18.04
 source "amazon-ebs" "aws_builder" {
   access_key    = var.aws_access_key
   secret_key    = var.aws_secret_key
   token         = var.aws_session_token
   region        = var.aws_region
-  ## OPCION 1 --> Seleccionar una AMI específica
-  #source_ami = "ami-095a8f574cb0ac0d0" # AMI de Ubuntu 20.04 LTS
-
-  ## OPCION 2 --> Seleccionar la AMI más reciente
-  # Esto busca la AMI más reciente de Ubuntu18.04 con las caracteristicas especificadas (región especificada,ebs...)
-
+  
   source_ami_filter {
     filters = {
       name                = "ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"
