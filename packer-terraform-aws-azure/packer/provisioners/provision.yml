@@ -8,38 +8,38 @@
       apt:
         update_cache: yes
 
-    # Instalar Nginx
+    # Instalación de Nginx
     - name: Instalar Nginx
       apt:
         name: nginx
         state: present
 
-    # Configurar el firewall para Nginx
+    # Configuración del Firewall para Nginx
     - name: Permitir tráfico HTTP y HTTPS en UFW
       ufw:
         rule: allow
         name: "Nginx Full"
 
-    # Habilitar el servicio de Nginx
+    # Habilita el Servicio de Nginx
     - name: Habilitar servicio de Nginx
       systemd:
         name: nginx
         enabled: yes
         state: started
 
-    # Configurar repositorio y instalar Node.js
+    # Configuración del Repositorio y realiza la instalación de Node.js
     - name: Configurar repositorio de Node.js
       shell: |
         curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -
         apt install -y nodejs build-essential
 
-    # Instalar PM2 globalmente
+    # Instalación de PM2 de Forma Global
     - name: Instalar PM2
       npm:
         name: pm2
         global: yes
 
-    # Copiar aplicación Node.js
+    # Copia la App de Node.js al Servidor en la Ruta /home/ubuntu/
     - name: Copiar aplicación Node.js
       copy:
         src: /tmp/app.js
@@ -48,9 +48,7 @@
         group: ubuntu
         mode: '0777'
 
-    # Configurar PM2 para gestionar la aplicación
-    #sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u sammy --hp /home/sammy
-    #env PATH=$PATH:/usr/bin pm2 startup systemd --hp /root
+    # Configuración de PM2 para la Gestión de la Aplicación
     - name: Configurar aplicación con PM2
       shell: |
         pm2 start /home/ubuntu/app.js
