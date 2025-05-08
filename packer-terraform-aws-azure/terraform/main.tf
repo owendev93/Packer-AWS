@@ -12,21 +12,11 @@ provider "azurerm" {
 }
 
 
+#AWS PROVIDER
+# Se especifica la región de AWS donde se desplegarán los recursos.
 
-#################################################################################################
-#################################################################################################
-#################################################################################################
-                                            #AWS
-####################################################################################################
-####################################################################################################
-####################################################################################################
-# IMPORTANTE --> VARIABLE COUNT
-# count es una variable que te dice el numero de recursos a levantar en los tipo RESOURCES--> si es uno levantara 1 y si es 0, pues 0. (si fuese 3 levantaria 3 recursos)
-# cuando se usa count, se debe usar el indice para acceder a los recursos, por ejemplo aws_instance.web_server[0].id
-
-# RECURSO PARA EJECUTAR PACKER Y GENERAR LA AMI
-# Este recurso utiliza un comando local (en la maquina que ejecuta terraform init) para ejecutar Packer con las variables necesarias
-# y generar la AMI basada en el archivo de configuración de Packer (main.pkr.hcl).
+# RECURSO PARA EJECUTAR PACKER Y GENERAR LA AMI EN AWS
+# Este recurso utiliza un comando local (en la máquina que ejecuta `terraform init`) para ejecutar Packer con las variables necesarias
 resource "null_resource" "packer_ami" {
 
   count = 1
@@ -34,23 +24,25 @@ resource "null_resource" "packer_ami" {
   # local-exec ejecuta un comando en la máquina que ejecuta Terraform.
   provisioner "local-exec" {
     # Este comando invoca Packer para construir una AMI personalizada usando las variables y configuraciones proporcionadas.
-    # usa solo ese provisioner y builder comandos-cloud-node-nginx.amazon-ebs.aws_builder
+    # Se especifica el nombre de la AMI y las credenciales de AWS necesarias para la creación.
+    # Se utiliza el archivo de configuración de Packer (`main.pkr.hcl`) y un archivo de variables (`variables.pkrvars.hcl`).
     command = "packer build -only=comandos-cloud-node-nginx.amazon-ebs.aws_builder -var aws_access_key=${var.aws_access_key} -var aws_secret_key=${var.aws_secret_key} -var aws_session_token=${var.aws_session_token} -var-file=..\\packer\\variables.pkrvars.hcl ..\\packer\\main.pkr.hcl"
   }
 }
 
-####################################################################################################
+
 # OBTENER LA ÚLTIMA AMI CREADA
-####################################################################################################
+# Este bloque recupera la AMI más reciente creada por Packer, utilizando un filtro para buscar por nombre.
+# Se asegura de que la AMI sea creada antes de intentar recuperarla utilizando `depends_on`.
 data "aws_ami" "latest_ami" {
   count = 1
-  depends_on = [null_resource.packer_ami] # Espera a que el provisioner "packer_ami" termine --> asegura que la AMI sea creada antes de intentar recuperarla.
-  most_recent = true                      # Selecciona siempre la AMI más reciente.
+  depends_on = [null_resource.packer_ami] 
+  most_recent = true                     
   filter {
-    name   = "name"                       # Filtra por el nombre de la AMI.
-    values = ["${var.ami_name}*"]         # Busca nombres que coincidan parcialmente con el valor de la variable `ami_name`.
+    name   = "name"                      
+    values = ["${var.ami_name}*"]         
   }
-  owners = ["self"]                       # Limita la búsqueda a las AMIs creadas por el propietario actual.
+  owners = ["self"]                       
 }
 
 ####################################################################################################
