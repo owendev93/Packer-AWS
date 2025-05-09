@@ -30,7 +30,6 @@ resource "null_resource" "packer_ami" {
   }
 }
 
-
 # OBTENER LA ÚLTIMA AMI CREADA
 # Este bloque recupera la AMI más reciente creada por Packer, utilizando un filtro para buscar por nombre.
 # Se asegura de que la AMI sea creada antes de intentar recuperarla utilizando `depends_on`.
@@ -45,128 +44,83 @@ data "aws_ami" "latest_ami" {
   owners = ["self"]                       
 }
 
-####################################################################################################
 # OBTENER LA VPC POR DEFECTO (configuración de red virtual)
-####################################################################################################
+
 data "aws_vpc" "default" {
   count = 1
-  default = true # Recupera la VPC predeterminada asociada a la cuenta AWS.
+  default = true 
 }
 
-####################################################################################################
-# CONFIGURACIÓN DEL GRUPO DE SEGURIDAD PARA LA INSTANCIA EC2
-####################################################################################################
-# Intentar buscar un grupo de seguridad existente basado en su nombre y VPC.
-# data "aws_security_group" "existing_sg" {
-#   count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
-#   # Filtro para buscar un grupo de seguridad por su nombre.
-#   filter {
-#     name   = "group-name"
-#     values = ["${var.instance_name}-sg"] # Nombre basado en la variable `instance_name`.
-#   }
-#   # Filtro para asegurarse de que pertenece a la VPC predeterminada.
-#   # filter {
-#   #   name   = "vpc-id"
-#   #   values = [data.aws_vpc.default[0].id] # ID de la VPC predeterminada.
-#   # }
-#   filter {
-#     name   = "vpc-id"
-#     values = length(data.aws_vpc.default) > 0 ? [data.aws_vpc.default[0].id] : []
-#   }
-
-# }
+# Este bloque recupera la VPC predeterminada de AWS, que se utilizará para asociar los recursos creados.
+# Se asegura de que la VPC sea creada antes de intentar recuperarla utilizando `depends_on`.
 resource "aws_security_group" "web_server_sg" {
-  # Crear un nuevo grupo de seguridad solo si no existe uno con el nombre especificado.
-  # Condición para crear o no el recurso. (si no existe count=1, se crea uno nuevo), try es para que no falle si no hay
+  
   count = 1
-  #count = length(try(data.aws_security_group.existing_sg, [])) == 0 ? 1 : 0
-  name        = "${var.instance_name}-sg" # El nombre del grupo de seguridad se basa en el nombre de la instancia.
-  description = "Grupo de seguridad para la instancia EC2" # Descripción del grupo.
-  #vpc_id      = data.aws_vpc.default[0].id  # Asocia este grupo de seguridad a la VPC predeterminada.
+  name        = "${var.instance_name}-sg" 
+  description = "Grupo de seguridad para la instancia EC2" 
   vpc_id      = length(data.aws_vpc.default) > 0 ? data.aws_vpc.default[0].id : null
   
-  #ingress --> trafico de entrada
-  #egrress --> trafico de salida
-  # Reglas de ingreso para permitir tráfico HTTP.
   ingress {
     description      = "Permitir trafico HTTP"
-    from_port        = 80               # Puerto de entrada (HTTP).
+    from_port        = 80               
     to_port          = 80
-    protocol         = "tcp"            # Protocolo TCP.
-    cidr_blocks      = ["0.0.0.0/0"]    # Permite tráfico desde cualquier dirección IP.
+    protocol         = "tcp"            
+    cidr_blocks      = ["0.0.0.0/0"]    
   }
 
-  # Reglas de ingreso para permitir tráfico HTTPS.
   ingress {
     description      = "Permitir trafico HTTPS"
-    from_port        = 443              # Puerto de entrada (HTTPS).
+    from_port        = 443              
     to_port          = 443
     protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]    # Permite tráfico desde cualquier dirección IP.
+    cidr_blocks      = ["0.0.0.0/0"]    
   }
 
-  # Reglas de ingreso para permitir acceso SSH.
   ingress {
     description      = "Permitir acceso SSH"
-    from_port        = 22               # Puerto de entrada (SSH).
+    from_port        = 22               
     to_port          = 22
     protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]    # Permite acceso desde cualquier dirección IP (debe ser restringido en entornos reales).
+    cidr_blocks      = ["0.0.0.0/0"]    
   }
 
-  # Reglas de egreso para permitir todo el tráfico saliente.
   egress {
-    from_port   = 0                     # Puerto de salida (todos).
+    from_port   = 0                     
     to_port     = 0
-    protocol    = "-1"                  # Permite todos los protocolos.
-    cidr_blocks = ["0.0.0.0/0"]         # Permite tráfico hacia cualquier dirección IP.
+    protocol    = "-1"                 
+    cidr_blocks = ["0.0.0.0/0"]        
   }
 }
-###################################################
+
 # GENERA EL PAR DE CLAVES Y SE LO PASA A AWS
-##################################################
-# no almacenamos las claves, no podriamos usarlas para conectarnos por ssh a la instancia 
-# Generar un par de claves SSH automáticamente
+# Este bloque genera un par de claves SSH automáticamente y registra la clave pública en AWS.
 resource "tls_private_key" "ssh_key" {
   algorithm = "RSA"
   rsa_bits  = 2048
 }
 
-# Registrar la clave pública en AWS
 resource "aws_key_pair" "generated_key" {
   key_name   = var.key_name # Nombre de la clave en AWS
   public_key = tls_private_key.ssh_key.public_key_openssh
 }
 
-####################################################################################################
-# CONFIGURACIÓN DE LA INSTANCIA EC2
-####################################################################################################
-# Este recurso lanza una instancia EC2 usando la AMI recuperada en el bloque anterior.
-# Asocia el grupo de seguridad a la instancia EC2 y configura la conexión SSH.
+
+# CONFIGURACIÓN DE LA INSTANCIA EC2.
+# Este bloque lanza una instancia EC2 en AWS utilizando la AMI recuperada anteriormente.
+# Se especifica el tipo de instancia, la clave SSH y el grupo de seguridad asociado.
 
 resource "aws_instance" "web_server" {
-  ## IMPORTANTE--> Condicion para desplegar en AWS, si al hacer el terraform apply el valor del target es aws o both, se desplegara en aws
   count = 1
 
-  ami                   = data.aws_ami.latest_ami[0].id # Usa la AMI más reciente creada con Packer.
-  instance_type         = var.instance_type          # Define el tipo de instancia basado en la variable `instance_type`.
-  key_name              = aws_key_pair.generated_key.key_name              # Especifica la clave SSH para acceso remoto.
-  #vpc_security_group_ids = [aws_security_group.web_server_sg.id] # Asocia el grupo de seguridad configurado.
-  # Referencia correcta al grupo de seguridad configurado.
+  ami                   = data.aws_ami.latest_ami[0].id 
+  instance_type         = var.instance_type          
+  key_name              = aws_key_pair.generated_key.key_name              
   vpc_security_group_ids = [aws_security_group.web_server_sg[0].id]
 
   tags = {
-    Name = var.instance_name # Etiqueta la instancia con el nombre especificado en la variable.
+    Name = var.instance_name 
   }
-
-  # Configuración para conectar a la instancia vía SSH.
-  # connection {
-  #   type        = "ssh"
-  #   user        = "ubuntu"                    # Usuario predeterminado en las AMIs de Ubuntu.
-  #   private_key = file("C:\\Users\\User\\.aws\\unir.pem") # Ruta a la clave privada para la conexión SSH. (cuando cree el par de claves lo almacene en esta direccion)
-  #   host        = self.public_ip              # Usa la IP pública de la instancia como host.
-  # }
-  # Configuración para conectar a la instancia vía SSH.
+  # Configuración de la red para la instancia EC2.
   connection {
     type        = "ssh"
     user        = "ubuntu"
@@ -177,76 +131,52 @@ resource "aws_instance" "web_server" {
   # Provisionador remoto para ejecutar comandos en la instancia EC2.
   provisioner "remote-exec" {
     inline = [
-      "echo 'La instancia está configurada correctamente.'" # Muestra un mensaje simple para verificar que la instancia está configurada.
+      "echo 'La instancia está configurada correctamente.'" 
     ]
   }
 }
 
-####################################################################################################
-####################################################################################################
-####################################################################################################
-                                            #AZURE
-####################################################################################################
-####################################################################################################
-####################################################################################################
 
-####################################################################################################
-# CONFIGURACIÓN DEL GRUPO DE RECURSOS PARA LA MÁQUINA VIRTUAL EN AZURE
-####################################################################################################
+#AZURE PROVIDER
+# Se especifica la región de Azure donde se desplegarán los recursos.
+
 # Crea un grupo de recursos donde se alojarán los recursos de Azure, como redes y máquinas virtuales.
 resource "azurerm_resource_group" "example_rg" {
 
   count = 1
-  #name     = "${var.instance_name}-rg" # El nombre del grupo de recursos se basa en la variable `instance_name`.
   name = var.azure_resource_group_name
-  location = var.azure_region          # Define la región donde se desplegarán los recursos.
+  location = var.azure_region          
 }
 
-####################################################################################################
 # CONFIGURACIÓN PARA EJECUTAR PACKER Y GENERAR LA IMAGEN EN AZURE
-####################################################################################################
-# Este recurso utiliza un comando local (en la máquina que ejecuta `terraform init`) para ejecutar Packer con las variables necesarias
-# y generar la imagen basada en el archivo de configuración de Packer (`main.pkr.hcl`).
 resource "null_resource" "packer_ami_azure" {
 
   count = 1
-  depends_on = [azurerm_resource_group.example_rg] # Espera a que el recurso `azurerm_resource_group.example_rg` termine --> asegura que el grupo de recursos esté creado antes de intentar crear la imagen.
-  # local-exec ejecuta un comando en la máquina que ejecuta Terraform.
+  depends_on = [azurerm_resource_group.example_rg] 
   provisioner "local-exec" {
-    # Este comando invoca Packer para construir una imagen personalizada usando las variables y configuraciones proporcionadas.
     command = "packer build -only=ansible-cloud-node-nginx.azure-arm.azure_builder -var azure_subscription_id=${var.azure_subscription_id} -var azure_client_id=${var.azure_client_id} -var azure_client_secret=${var.azure_client_secret} -var azure_tenant_id=${var.azure_tenant_id} -var-file=../packer/variables.pkrvars.hcl ../packer/main.pkr.hcl"
   }
 }
-
-####################################################################################################
 # OBTENER LA ÚLTIMA IMAGEN CREADA EN AZURE
-####################################################################################################
 data "azurerm_image" "latest_azure_image" {
 
   count = 1
 
-  depends_on          = [null_resource.packer_ami_azure] # Espera a que el provisioner `packer_ami_azure` termine --> asegura que la imagen sea creada antes de intentar recuperarla.
-  name                = var.azure_image_name    # Busca la imagen por el nombre especificado en las variables.
-  #resource_group_name = "${var.instance_name}-rg" # Especifica el grupo de recursos donde está ubicada la imagen.
+  depends_on          = [null_resource.packer_ami_azure] 
+  name                = var.azure_image_name   
   resource_group_name = var.azure_resource_group_name
 }
 
-####################################################################################################
-# CONFIGURACIÓN DE LA RED VIRTUAL PARA LA MÁQUINA VIRTUAL EN AZURE
-####################################################################################################
-# Configura una red virtual para conectar recursos como la máquina virtual y la interfaz de red.
+# OBTENER LA RED VIRTUAL POR DEFECTO (configuración de red virtual)
 resource "azurerm_virtual_network" "example_vnet" {
 
   count = 1
-  name                = "${var.azure_instance_name}-vnet"  # Nombre de la red virtual basado en `instance_name`.
-  address_space       = ["10.0.0.0/16"]              # Espacio de direcciones IP asignado a la red.
-  location            = azurerm_resource_group.example_rg[0].location # Ubicación de la red virtual (mismo lugar que el grupo de recursos).
-  resource_group_name = azurerm_resource_group.example_rg[0].name     # Grupo de recursos asociado.
+  name                = "${var.azure_instance_name}-vnet"  
+  address_space       = ["10.0.0.0/16"]              
+  location            = azurerm_resource_group.example_rg[0].location 
+  resource_group_name = azurerm_resource_group.example_rg[0].name     
 }
 
-####################################################################################################
-# CONFIGURACIÓN DE GRUPO DE SEGURIDAD PARA LA MÁQUINA VIRTUAL EN AZURE
-####################################################################################################
 resource "azurerm_network_security_group" "example_nsg" {
   count = 1
   name                = "${var.azure_instance_name}-nsg"
@@ -279,52 +209,41 @@ resource "azurerm_network_security_group" "example_nsg" {
 }
 
 
-####################################################################################################
-# CONFIGURACIÓN DE LA SUBRED PARA LA MÁQUINA VIRTUAL EN AZURE
-####################################################################################################
-# Configura una subred dentro de la red virtual para conectar la máquina virtual.
+# Configura una subred dentro de la red virtual creada anteriormente.
+# Esta subred se utilizará para alojar la máquina virtual y otros recursos de red.
 resource "azurerm_subnet" "example_subnet" {
 
   count = 1
-  name                 = "${var.azure_instance_name}-subnet"  # Nombre de la subred basado en `instance_name`.
-  resource_group_name  = azurerm_resource_group.example_rg[0].name # Grupo de recursos asociado.
-  virtual_network_name = azurerm_virtual_network.example_vnet[0].name # Nombre de la red virtual a la que pertenece esta subred.
-  address_prefixes     = ["10.0.1.0/24"]                # Rango de direcciones IP asignado a esta subred.
+  name                 = "${var.azure_instance_name}-subnet"  
+  resource_group_name  = azurerm_resource_group.example_rg[0].name 
+  virtual_network_name = azurerm_virtual_network.example_vnet[0].name 
+  address_prefixes     = ["10.0.1.0/24"]                
   
 }
-# Configura una IP pública para la máquina virtual en Azure.
-# resource "azurerm_public_ip" "example_public_ip" {
-#   count               = var.deployment_target == "azure" || var.deployment_target == "both" ? 1 : 0
-#   name                = "${var.azure_instance_name}-public-ip"
-#   location            = azurerm_resource_group.example_rg[0].location
-#   resource_group_name = azurerm_resource_group.example_rg[0].name
-#   allocation_method   = "Dynamic" # Usa una IP pública dinámica
-# }
+
+# Configura una IP pública para la máquina virtual.
 resource "azurerm_public_ip" "example_public_ip" {
   count               = 1
   name                = "${var.azure_instance_name}-public-ip"
   location            = azurerm_resource_group.example_rg[0].location
   resource_group_name = azurerm_resource_group.example_rg[0].name
-  allocation_method   = "Static" # Cambia de Dynamic a Static
-  sku                 = "Standard" # Mantén el SKU Standard si lo estás utilizando
+  allocation_method   = "Static" 
+  sku                 = "Standard" 
 }
 
-####################################################################################################
-# CONFIGURACIÓN DE LA INTERFAZ DE RED PARA LA MÁQUINA VIRTUAL EN AZURE
-####################################################################################################
-# Configura una interfaz de red para conectar la máquina virtual a la red y asignar una dirección IP dinámica.
+# Configura una interfaz de red para la máquina virtual.
 resource "azurerm_network_interface" "example_nic" {
 
   count = 1
-  name                = "${var.azure_instance_name}-nic"       # Nombre de la interfaz de red basado en `instance_name`.
-  location            = azurerm_resource_group.example_rg[0].location # Ubicación de la interfaz de red (mismo lugar que el grupo de recursos).
-  resource_group_name = azurerm_resource_group.example_rg[0].name      # Grupo de recursos asociado.
+  name                = "${var.azure_instance_name}-nic"       
+  location            = azurerm_resource_group.example_rg[0].location 
+  resource_group_name = azurerm_resource_group.example_rg[0].name      
   
   ip_configuration {
-    name                          = "internal"           # Nombre del perfil de configuración IP.
-    subnet_id                     = azurerm_subnet.example_subnet[0].id # Subred a la que pertenece esta interfaz.
-    private_ip_address_allocation = "Dynamic"            # Asigna dinámicamente una dirección IP privada.
-    public_ip_address_id          = azurerm_public_ip.example_public_ip[0].id # Asocia la IP pública aquí
+    name                          = "internal"           
+    subnet_id                     = azurerm_subnet.example_subnet[0].id 
+    private_ip_address_allocation = "Dynamic"            
+    public_ip_address_id          = azurerm_public_ip.example_public_ip[0].id 
   }
   
 }
@@ -335,49 +254,41 @@ resource "azurerm_network_interface_security_group_association" "example" {
 }
 
 
-####################################################################################################
-# CONFIGURACIÓN DE LA MÁQUINA VIRTUAL EN AZURE
-####################################################################################################
-# Este recurso lanza una máquina virtual usando la imagen recuperada en el bloque anterior.
-# Asocia la interfaz de red y configura los discos y el perfil del sistema operativo.
-
+# Configura la máquina virtual en Azure.
+# Esta sección define la configuración de la máquina virtual, incluyendo el tamaño, la imagen y las credenciales de acceso.
 resource "azurerm_virtual_machine" "example_vm" {
 
-  ## IMPORTANTE--> Condicion para desplegar en AZURE, si al hacer el terraform apply el valor del target es azure o both, se desplegara en azure
   count = 1
 
-  name                  = "${var.azure_instance_name}-vm" # Nombre de la máquina virtual basado en `instance_name`.
-  location              = azurerm_resource_group.example_rg[0].location # Ubicación de la máquina virtual (mismo lugar que el grupo de recursos).
-  resource_group_name   = azurerm_resource_group.example_rg[0].name      # Grupo de recursos asociado.
-  network_interface_ids = [azurerm_network_interface.example_nic[0].id] # Asocia la interfaz de red configurada previamente.
-  vm_size               = var.azure_instance_type                    # Tipo de máquina virtual basado en la variable `azure_instance_type`.
+  name                  = "${var.azure_instance_name}-vm" 
+  location              = azurerm_resource_group.example_rg[0].location 
+  resource_group_name   = azurerm_resource_group.example_rg[0].name      
+  network_interface_ids = [azurerm_network_interface.example_nic[0].id] 
+  vm_size               = var.azure_instance_type                    
 
   # Configuración del disco del sistema operativo.
   storage_os_disk {
-    name              = "${var.azure_instance_name}-osdisk"  # Nombre del disco del sistema operativo basado en `instance_name`.
-    caching           = "ReadWrite"                   # Configuración de caché para el disco.
-    create_option     = "FromImage"                   # Indica que el disco se crea a partir de una imagen existente.
-    managed_disk_type = "Standard_LRS"                # Tipo de disco administrado.
+    name              = "${var.azure_instance_name}-osdisk"  
+    caching           = "ReadWrite"                   
+    create_option     = "FromImage"                   
+    managed_disk_type = "Standard_LRS"                
   }
 
   # Configuración para usar la imagen personalizada generada con Packer.
   storage_image_reference {
-    id = data.azurerm_image.latest_azure_image[0].id     # Utiliza la imagen recuperada en el bloque `data.azurerm_image`.
+    id = data.azurerm_image.latest_azure_image[0].id     
   }
-  ################## CONFIGURACION PARA ACCEDER POR CONTRASEÑA EN VEZ DE USAR PAR DE CLAVES (recomendado pero mas lio)
-  # Configuración del perfil del sistema operativo.
+  
   os_profile {
-    computer_name  = "${var.azure_instance_name}"          # Nombre del equipo (máquina virtual).
-    admin_username = var.azure_admin_username       # Usuario administrador para la conexión.
-    admin_password = var.azure_admin_password       # Contraseña para el usuario administrador.
+    computer_name  = "${var.azure_instance_name}"          
+    admin_username = var.azure_admin_username       
+    admin_password = var.azure_admin_password       
   }
 
-  # Configuración adicional para sistemas operativos Linux.
   os_profile_linux_config {
-    disable_password_authentication = false         # Permite autenticación con contraseña.
+    disable_password_authentication = false         
   }
 
-  # Provisioner para ejecutar comandos en la VM
   provisioner "remote-exec" {
     connection {
       type        = "ssh"
@@ -387,54 +298,7 @@ resource "azurerm_virtual_machine" "example_vm" {
     }
 
     inline = [
-      # Ejecuta app.js (trampilla un poco no he conseguido hacerlo directamente con la plantilla)
       "pm2 start /home/ubuntu/app.js"
     ]
   }
 }
-
-####################################################################################################
-# SALIDA DE INFORMACIÓN
-####################################################################################################
-# Estos bloques definen las salidas que se mostrarán al usuario al finalizar el despliegue.
-# Se incluye el ID de la instancia y su dirección IP pública.
-
-output "aws_instance_id" {
-  value = length(aws_instance.web_server) > 0 ? aws_instance.web_server[0].id : null
-  description = "ID de la instancia en AWS si existe"
-}
-
-output "aws_public_ip" {
-  value = length(aws_instance.web_server) > 0 ? aws_instance.web_server[0].public_ip : null
-  description = "IP pública de la instancia en AWS si existe"
-}
-
-output "azure_vm_id" {
-  value       = length(azurerm_virtual_machine.example_vm) > 0 ? azurerm_virtual_machine.example_vm[0].id : null
-  description = "ID de la máquina virtual en Azure si existe"
-}
-
-output "azure_vm_ip" {
-  value       = length(azurerm_network_interface.example_nic) > 0 ? azurerm_network_interface.example_nic[0].private_ip_address : null
-  description = "IP privada de la máquina virtual en Azure si existe"
-}
-
-output "azure_public_ip" {
-  value = length(azurerm_public_ip.example_public_ip) > 0 ? azurerm_public_ip.example_public_ip[0].ip_address : null
-  description = "IP pública de la máquina virtual en Azure si existe"
-}
-
-
-
-
-####################################################################################################
-
-# DESPLEGAR TERRAFORM
-
-# Get-ChildItem Env: | Where-Object { $_.Name -like "PKR_VAR_*" } --> ver credenciales actuales de AWS en la consola de powershell
-# Get-ChildItem Env: | Where-Object { $_.Name -like "ARM_*" } --> ver credenciales actuales DE AZURE en la consola de powershell
-
-######## EL BUENO
-# terraform init --> Inicializa el directorio de trabajo
-# terraform apply -var "deployment_target=both" ` -var "aws_access_key=$env:PKR_VAR_aws_access_key" ` -var "aws_secret_key=$env:PKR_VAR_aws_secret_key" ` -var "aws_session_token=$env:PKR_VAR_aws_session_token" ` -var "azure_subscription_id=$env:ARM_SUBSCRIPTION_ID" ` -var "azure_client_id=$env:ARM_CLIENT_ID" ` -var "azure_client_secret=$env:ARM_CLIENT_SECRET" ` -var "azure_tenant_id=$env:ARM_TENANT_ID"
-# terraform destroy -var "deployment_target=aws" ` -var "aws_access_key=$env:PKR_VAR_aws_access_key" ` -var "aws_secret_key=$env:PKR_VAR_aws_secret_key" ` -var "aws_session_token=$env:PKR_VAR_aws_session_token" ` -var "azure_subscription_id=$env:ARM_SUBSCRIPTION_ID" ` -var "azure_client_id=$env:ARM_CLIENT_ID" ` -var "azure_client_secret=$env:ARM_CLIENT_SECRET" ` -var "azure_tenant_id=$env:ARM_TENANT_ID"
