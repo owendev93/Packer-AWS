@@ -10,16 +10,16 @@ variable "aws_region" {
 
 variable "ami_name" {
   default     = "ami-node-nginx"
-  description = "Nombre base de la AMI a crear"
+  description = "Nombre base de la AMI"
 }
 
 variable "instance_type" {
   default     = "t2.micro"
-  description = "Tipo de instancia EC2"
+  description = "Instancia EC2"
 }
 
 variable "key_name" {
-  description = "Nombre del par de claves para acceder a la instancia generado"
+  description = "Nombre del par de claves de AWS"
 }
 
 variable "instance_name" {
@@ -29,27 +29,24 @@ variable "instance_name" {
 ### CREDENCIALES
 
 variable "aws_access_key" {
-  description = "Acceso de AWS (AWS_ACCESS_KEY_ID)"
+  description = "Acceso AWS (AWS_ACCESS_KEY_ID)"
 }
 
 variable "aws_secret_key" {
-  description = "Secreta de AWS (AWS_SECRET_ACCESS_KEY)"
+  description = "Secreta AWS (AWS_SECRET_ACCESS_KEY)"
 }
 
 variable "aws_session_token" {
-  description = "Sesión de AWS (AWS_SESSION_TOKEN)"
+  description = "Token AWS (AWS_SESSION_TOKEN)"
 }
 
-############################################
-# AZURE
-######º#####################################
 
-###############CREDENCIALES
-variable "azure_subscription_id" { description = "Azure ID subscription " }
-variable "azure_client_id" { description = "Azure client ID" }
-variable "azure_client_secret" { description = "Azure client secret" }
-variable "azure_tenant_id" { description = "Azure tenant ID" }
-###############################
+# AZURE
+variable "azure_subscription_id" { description = "ID subscription " }
+variable "azure_client_id" { description = "Client ID" }
+variable "azure_client_secret" { description = "Client secret" }
+variable "azure_tenant_id" { description = "Tenant ID" }
+
 
 variable "azure_region" { 
   default = "Brazil South" 
@@ -63,7 +60,7 @@ variable "azure_admin_username" {
   default = "adminuser" 
   description = "Usuario Administrador para gestionar la VM de Azure" 
 }
-variable "azure_admin_password" { description = "Admin password for Azure VM" }
+variable "azure_admin_password" { description = "Password for Azure VM" }
 variable "azure_image_name" { description = "Name of the Azure image created by Packer" }
 variable "azure_resource_group_name" { description = "Name of the Azure resource group" }
 variable "azure_instance_name" { description = "Name of the Azure instance" }
