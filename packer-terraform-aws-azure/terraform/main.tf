@@ -19,7 +19,7 @@ provider "azurerm" {
 # Este recurso utiliza un comando local (en la máquina que ejecuta `terraform init`) para ejecutar Packer con las variables necesarias
 resource "null_resource" "packer_ami" {
 
-  count = 1
+  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
 
   # local-exec ejecuta un comando en la máquina que ejecuta Terraform.
   provisioner "local-exec" {
@@ -34,7 +34,7 @@ resource "null_resource" "packer_ami" {
 # Este bloque recupera la AMI más reciente creada por Packer, utilizando un filtro para buscar por nombre.
 # Se asegura de que la AMI sea creada antes de intentar recuperarla utilizando `depends_on`.
 data "aws_ami" "latest_ami" {
-  count = 1
+  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
   depends_on = [null_resource.packer_ami] 
   most_recent = true                     
   filter {
@@ -47,7 +47,7 @@ data "aws_ami" "latest_ami" {
 # OBTENER LA VPC POR DEFECTO (configuración de red virtual)
 
 data "aws_vpc" "default" {
-  count = 1
+  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
   default = true 
 }
 
@@ -55,7 +55,7 @@ data "aws_vpc" "default" {
 # Se asegura de que la VPC sea creada antes de intentar recuperarla utilizando `depends_on`.
 resource "aws_security_group" "web_server_sg" {
   
-  count = 1
+  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
   name        = "${var.instance_name}-sg" 
   description = "Grupo de seguridad para la instancia EC2" 
   vpc_id      = length(data.aws_vpc.default) > 0 ? data.aws_vpc.default[0].id : null
@@ -100,7 +100,7 @@ resource "tls_private_key" "ssh_key" {
 }
 
 resource "aws_key_pair" "generated_key" {
-  key_name   = var.key_name # Nombre de la clave en AWS
+  key_name   = var.key_name 
   public_key = tls_private_key.ssh_key.public_key_openssh
 }
 
@@ -110,7 +110,7 @@ resource "aws_key_pair" "generated_key" {
 # Se especifica el tipo de instancia, la clave SSH y el grupo de seguridad asociado.
 
 resource "aws_instance" "web_server" {
-  count = 1
+  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
 
   ami                   = data.aws_ami.latest_ami[0].id 
   instance_type         = var.instance_type          
@@ -143,7 +143,7 @@ resource "aws_instance" "web_server" {
 # Crea un grupo de recursos donde se alojarán los recursos de Azure, como redes y máquinas virtuales.
 resource "azurerm_resource_group" "example_rg" {
 
-  count = 1
+  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
   name = var.azure_resource_group_name
   location = var.azure_region          
 }
@@ -151,7 +151,7 @@ resource "azurerm_resource_group" "example_rg" {
 # CONFIGURACIÓN PARA EJECUTAR PACKER Y GENERAR LA IMAGEN EN AZURE
 resource "null_resource" "packer_ami_azure" {
 
-  count = 1
+  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
   depends_on = [azurerm_resource_group.example_rg] 
   provisioner "local-exec" {
     command = "packer build -only=ansible-cloud-node-nginx.azure-arm.azure_builder -var azure_subscription_id=${var.azure_subscription_id} -var azure_client_id=${var.azure_client_id} -var azure_client_secret=${var.azure_client_secret} -var azure_tenant_id=${var.azure_tenant_id} -var-file=../packer/variables.pkrvars.hcl ../packer/main.pkr.hcl"
@@ -160,7 +160,7 @@ resource "null_resource" "packer_ami_azure" {
 # OBTENER LA ÚLTIMA IMAGEN CREADA EN AZURE
 data "azurerm_image" "latest_azure_image" {
 
-  count = 1
+  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
 
   depends_on          = [null_resource.packer_ami_azure] 
   name                = var.azure_image_name   
@@ -170,7 +170,7 @@ data "azurerm_image" "latest_azure_image" {
 # OBTENER LA RED VIRTUAL POR DEFECTO (configuración de red virtual)
 resource "azurerm_virtual_network" "example_vnet" {
 
-  count = 1
+  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
   name                = "${var.azure_instance_name}-vnet"  
   address_space       = ["10.0.0.0/16"]              
   location            = azurerm_resource_group.example_rg[0].location 
@@ -178,7 +178,7 @@ resource "azurerm_virtual_network" "example_vnet" {
 }
 
 resource "azurerm_network_security_group" "example_nsg" {
-  count = 1
+  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
   name                = "${var.azure_instance_name}-nsg"
   location            = azurerm_resource_group.example_rg[0].location
   resource_group_name = azurerm_resource_group.example_rg[0].name
@@ -213,7 +213,7 @@ resource "azurerm_network_security_group" "example_nsg" {
 # Esta subred se utilizará para alojar la máquina virtual y otros recursos de red.
 resource "azurerm_subnet" "example_subnet" {
 
-  count = 1
+  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
   name                 = "${var.azure_instance_name}-subnet"  
   resource_group_name  = azurerm_resource_group.example_rg[0].name 
   virtual_network_name = azurerm_virtual_network.example_vnet[0].name 
@@ -223,7 +223,7 @@ resource "azurerm_subnet" "example_subnet" {
 
 # Configura una IP pública para la máquina virtual.
 resource "azurerm_public_ip" "example_public_ip" {
-  count               = 1
+  count               = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
   name                = "${var.azure_instance_name}-public-ip"
   location            = azurerm_resource_group.example_rg[0].location
   resource_group_name = azurerm_resource_group.example_rg[0].name
@@ -234,7 +234,7 @@ resource "azurerm_public_ip" "example_public_ip" {
 # Configura una interfaz de red para la máquina virtual.
 resource "azurerm_network_interface" "example_nic" {
 
-  count = 1
+  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
   name                = "${var.azure_instance_name}-nic"       
   location            = azurerm_resource_group.example_rg[0].location 
   resource_group_name = azurerm_resource_group.example_rg[0].name      
@@ -258,7 +258,7 @@ resource "azurerm_network_interface_security_group_association" "example" {
 # Esta sección define la configuración de la máquina virtual, incluyendo el tamaño, la imagen y las credenciales de acceso.
 resource "azurerm_virtual_machine" "example_vm" {
 
-  count = 1
+  count = var.deployment_target == "aws" || var.deployment_target == "both" ? 1 : 0
 
   name                  = "${var.azure_instance_name}-vm" 
   location              = azurerm_resource_group.example_rg[0].location 

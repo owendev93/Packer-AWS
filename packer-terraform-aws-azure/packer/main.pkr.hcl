@@ -84,8 +84,8 @@ source "amazon-ebs" "aws_builder" {
     most_recent = true
   }
 
-  instance_type = var.instance_type # Instancia AMIs t2.micro
-  ssh_username  = "ubuntu" # Usuario SSH para la imagen de AWS
+  instance_type = var.instance_type 
+  ssh_username  = "ubuntu" 
   ami_name      = var.ami_name
 
   tags = {
@@ -107,9 +107,9 @@ source "azure-arm" "azure_builder" {
   managed_image_name             = var.azure_image_name
   managed_image_resource_group_name = var.azure_resource_group_name
   location                       = var.azure_region
-  ssh_username = "ubuntu" # Usuario SSH para la imagen de Azure
+  ssh_username = "ubuntu" 
 
-  vm_size                        = var.azure_instance_type # Instancia de Azure (ej. Standard_B1s) equivalente a t2.micro de AWS
+  vm_size                        = var.azure_instance_type 
   os_type                        = "Linux"
   image_publisher                = "Canonical"
   image_offer                    = "UbuntuServer"

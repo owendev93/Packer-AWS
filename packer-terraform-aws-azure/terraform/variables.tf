@@ -1,7 +1,15 @@
-############################################
-# AWS
-######º#####################################
 
+
+# Podemos que infraestructura desplegar: aws, azure o ambos
+# En este caso, se define una variable de entorno para el despliegue
+# de la infraestructura en AWS o Azure.
+variable "deployment_target" {
+  description = "Define qué infraestructura desplegar: aws, azure o both"
+  default     = "both"
+}
+
+# Variables de configuración para Packer y Terraform
+# AWS
 
 variable "aws_region" {
   default     = "sa-east-1"
@@ -39,7 +47,6 @@ variable "aws_secret_key" {
 variable "aws_session_token" {
   description = "Token AWS (AWS_SESSION_TOKEN)"
 }
-
 
 # AZURE
 variable "azure_subscription_id" { description = "ID subscription " }

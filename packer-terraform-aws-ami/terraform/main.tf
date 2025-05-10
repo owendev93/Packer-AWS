@@ -118,7 +118,7 @@ resource "aws_instance" "web_server" {
   connection {
     type        = "ssh"
     user        = "ubuntu"                    # Usuario predeterminado en las AMIs de Ubuntu.
-    private_key = file("C:\\Users\\OwenDev\\Downloads\\packNode.pem") # Ruta a la clave privada para la conexión SSH. (cuando cree el par de claves lo almacene en esta direccion)
+    private_key = file("D:\\Devlopment\\ReposGit\\DevOps\\Packer-AWS\\packer-terraform-aws-ami\\localKey.pem") # Ruta a la clave privada para la conexión SSH. (cuando cree el par de claves lo almacene en esta direccion)
     host        = self.public_ip              # Usa la IP pública de la instancia como host.
   }
 
