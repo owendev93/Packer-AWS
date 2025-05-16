@@ -1,4 +1,4 @@
-# Plantilla de Packer para crear una imagen para AWS con Ubuntu 20.04, Nginx y Node.js
+# Plantilla de Packer para crear una imagen AMI para AWS con Ubuntu 20.04, Nginx y Node.js
 
 ########################################################################################################################
 # PLUGINS: Define los plugins necesarios para la plantilla
